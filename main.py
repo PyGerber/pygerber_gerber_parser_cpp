@@ -1,0 +1,3 @@
+import python.pygerber_gerber_parser_cpp.pygerber_gerber_parser_cpp as pygerber_gerber_parser_cpp
+
+print(pygerber_gerber_parser_cpp.Pet("ffo"))
