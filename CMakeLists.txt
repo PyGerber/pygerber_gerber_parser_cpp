@@ -1,14 +1,17 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
-
-project(
-    pygerber_gerber_parser_cpp_project
-    LANGUAGES CXX
-    VERSION 0.0.1
-)
+project(pygerber_gerber_parser_cpp_project LANGUAGES CXX VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_library(GerberParserCppModule STATIC)
+target_sources(
+    GerberParserCppModule PUBLIC
+    FILE_SET cxx_modules TYPE CXX_MODULES FILES
+    cpp/src/GerberParserCppModule.cxx
+)
+target_compile_features(GerberParserCppModule PUBLIC cxx_std_20)
 
 include(cmake/CPM.cmake)
 
@@ -20,12 +23,28 @@ CPMAddPackage(
     URL https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip
 )
 
-pybind11_add_module(pygerber_gerber_parser_cpp cpp/src/main.cpp)
+pybind11_add_module(PyGerberGerberParserCpp cpp/src/PythonModule.cpp)
+target_link_libraries(PyGerberGerberParserCpp PRIVATE GerberParserCppModule)
+target_compile_features(PyGerberGerberParserCpp PRIVATE cxx_std_20)
 
 add_custom_command(
-    TARGET pygerber_gerber_parser_cpp
+    TARGET PyGerberGerberParserCpp
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:pygerber_gerber_parser_cpp>
-        ${CMAKE_SOURCE_DIR}/python/pygerber_gerber_parser_cpp/$<TARGET_FILE_NAME:pygerber_gerber_parser_cpp>
+        $<TARGET_FILE:PyGerberGerberParserCpp>
+        ${PROJECT_SOURCE_DIR}/python/pygerber_gerber_parser_cpp/gerber_parser$<TARGET_FILE_SUFFIX:PyGerberGerberParserCpp>
 )
+
+CPMAddPackage(
+    NAME Catch2
+    VERSION 3.3.2
+    URL https://github.com/catchorg/Catch2/archive/refs/tags/v3.3.2.zip
+)
+
+
+file(GLOB_RECURSE test_source_files ${PROJECT_SOURCE_DIR}/cpp/test/ *.test.cpp)
+add_executable(tests)
+target_sources(tests PUBLIC ${test_source_files})
+
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain GerberParserCppModule)
+target_compile_features(tests PRIVATE cxx_std_20)
