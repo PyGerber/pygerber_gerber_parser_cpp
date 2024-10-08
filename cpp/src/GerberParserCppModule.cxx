@@ -24,7 +24,12 @@ export namespace gerber {
         return std::make_tuple(line_number, index - line_start);
     }
 
-    class Node {};
+    class Node {
+      public:
+        virtual std::string getNodeName() const {
+            return "Node";
+        }
+    };
 
     class File : public Node {
       private:
@@ -40,15 +45,39 @@ export namespace gerber {
         const std::vector<std::unique_ptr<Node>>& getNodes() const {
             return nodes;
         }
+
+        virtual std::string getNodeName() const {
+            return "File";
+        }
     };
 
-    class Command : public Node {};
+    class Command : public Node {
+      public:
+        std::string getNodeName() const override {
+            return "Command";
+        }
+    };
 
-    class G01 : public Command {};
+    class G01 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G01";
+        }
+    };
 
-    class G02 : public Command {};
+    class G02 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G02";
+        }
+    };
 
-    class G03 : public Command {};
+    class G03 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G03";
+        }
+    };
 
     class G04 : public Command {
       private:
@@ -57,25 +86,74 @@ export namespace gerber {
       public:
         G04(std::string comment) :
             comment(comment) {}
+
+        std::string getNodeName() const override {
+            return "G04";
+        }
     };
 
-    class G36 : public Command {};
+    class G36 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G36";
+        }
+    };
 
-    class G37 : public Command {};
+    class G37 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G37";
+        }
+    };
 
-    class G70 : public Command {};
+    class G70 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G70";
+        }
+    };
 
-    class G71 : public Command {};
+    class G71 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G71";
+        }
+    };
 
-    class G74 : public Command {};
+    class G74 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G74";
+        }
+    };
 
-    class G75 : public Command {};
+    class G75 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G75";
+        }
+    };
 
-    class G90 : public Command {};
+    class G90 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G90";
+        }
+    };
 
-    class G91 : public Command {};
+    class G91 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G91";
+        }
+    };
 
-    class ExtendedCommand : public Node {};
+    class ExtendedCommand : public Node {
+      public:
+        std::string getNodeName() const override {
+            return "ExtendedCommand";
+        }
+    };
 
     class SyntaxError : public std::runtime_error {
       public:
@@ -89,10 +167,15 @@ export namespace gerber {
         std::string_view                   full_source;
         location_t                         global_index;
         // Regular expressions cache
-        std::regex                         g_code;
+        std::regex                         g_code_regex;
+        std::regex                         g04_regex;
 
         Parser() :
-            g_code("^[Gg]0*([1-9][0-9]*)\\*") {}
+            commands(0),
+            full_source(""),
+            global_index(0),
+            g_code_regex("^[Gg]0*([1-9][0-9]*)\\*"),
+            g04_regex("^[Gg]0*4([^%*])\\*") {}
 
         ~Parser() {}
 
@@ -143,7 +226,7 @@ export namespace gerber {
                 gerber.data(),
                 gerber.data() + gerber.size(),
                 match,
-                g_code,
+                g_code_regex,
                 std::regex_constants::match_continuous
             );
             if (result && match.size() > 1) {
@@ -153,14 +236,51 @@ export namespace gerber {
                     case 1:
                         commands.push_back(std::make_unique<G01>());
                         return match.length();
-
                     case 2:
                         commands.push_back(std::make_unique<G02>());
                         return match.length();
-
-                    default:
-                        break;
+                    case 3:
+                        commands.push_back(std::make_unique<G03>());
+                        return match.length();
+                    case 4:
+                        commands.push_back(std::make_unique<G04>(""));
+                        return match.length();
+                    case 36:
+                        commands.push_back(std::make_unique<G36>());
+                        return match.length();
+                    case 37:
+                        commands.push_back(std::make_unique<G37>());
+                        return match.length();
+                    case 70:
+                        commands.push_back(std::make_unique<G70>());
+                        return match.length();
+                    case 71:
+                        commands.push_back(std::make_unique<G71>());
+                        return match.length();
+                    case 74:
+                        commands.push_back(std::make_unique<G74>());
+                        return match.length();
+                    case 75:
+                        commands.push_back(std::make_unique<G75>());
+                        return match.length();
+                    case 90:
+                        commands.push_back(std::make_unique<G90>());
+                        return match.length();
+                    case 91:
+                        commands.push_back(std::make_unique<G91>());
+                        return match.length();
                 }
+            }
+            result = std::regex_search(
+                gerber.data(),
+                gerber.data() + gerber.size(),
+                match,
+                g_code_regex,
+                std::regex_constants::match_continuous
+            );
+            if (result && match.size() > 1) {
+                commands.push_back(std::make_unique<G04>(match[1].str()));
+                return match.length();
             }
 
             throw_syntax_error();
