@@ -83,3 +83,24 @@ TEST_CASE("Parse FS", "[properties]") {
     REQUIRE(fs->y_integral == 2);
     REQUIRE(fs->y_decimal == 6);
 }
+
+TEMPLATE_TEST_CASE_SIG(
+    "Parse MO",
+    "[properties]",
+    ((gerber::UnitMode::Enum enumValue), enumValue),
+    (gerber::UnitMode::INCHES),
+    (gerber::UnitMode::MILLIMETERS)
+) {
+    std::string    unitModeString = gerber::UnitMode(enumValue).toString();
+    gerber::Parser parser;
+    auto           gerber_source = std::format("%MO{}*%", unitModeString);
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto mo = std::dynamic_pointer_cast<gerber::MO>(nodes[0]);
+
+    REQUIRE(mo->getNodeName() == "MO");
+
+    REQUIRE(mo->unit_mode == enumValue);
+}

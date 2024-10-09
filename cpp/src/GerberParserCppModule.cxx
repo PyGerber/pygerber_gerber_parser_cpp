@@ -189,7 +189,7 @@ export namespace gerber {
         Zeros(Enum value) :
             value(value) {}
 
-        static Enum from_string(const std::string_view& str) {
+        static Enum fromString(const std::string_view& str) {
             if (str == "L") {
                 return Enum::SKIP_LEADING;
             } else if (str == "T") {
@@ -223,7 +223,7 @@ export namespace gerber {
         CoordinateNotation(Enum value) :
             value(value) {}
 
-        static CoordinateNotation from_string(const std::string_view& str) {
+        static CoordinateNotation fromString(const std::string_view& str) {
             if (str == "A") {
                 return Enum::ABSOLUTE;
             } else if (str == "I") {
@@ -259,8 +259,8 @@ export namespace gerber {
            int                     x_decimal,
            int                     y_integral,
            int                     y_decimal) :
-            zeros(Zeros::from_string(zeros)),
-            coordinate_mode(CoordinateNotation::from_string(coordinate_mode)),
+            zeros(Zeros::fromString(zeros)),
+            coordinate_mode(CoordinateNotation::fromString(coordinate_mode)),
             x_integral(x_integral),
             x_decimal(x_decimal),
             y_integral(y_integral),
@@ -268,6 +268,57 @@ export namespace gerber {
 
         std::string getNodeName() const override {
             return "FS";
+        }
+    };
+
+    class UnitMode {
+      public:
+        enum Enum : uint8_t {
+            INCHES,
+            MILLIMETERS
+        };
+
+        Enum value;
+
+      private:
+        UnitMode() = delete;
+
+      public:
+        UnitMode(Enum value) :
+            value(value) {}
+
+        static UnitMode fromString(const std::string_view& str) {
+            if (str == "IN") {
+                return Enum::INCHES;
+            } else if (str == "MM") {
+                return Enum::MILLIMETERS;
+            }
+            throw std::invalid_argument("Invalid unit mode");
+        }
+
+        std::string toString() const {
+            return value == Enum::INCHES ? "IN" : "MM";
+        }
+
+        bool operator==(const UnitMode& other) const {
+            return value == other.value;
+        }
+
+        bool operator==(const Enum& other) const {
+            return value == other;
+        }
+    };
+
+    class MO : public ExtendedCommand {
+      public:
+        UnitMode unit_mode;
+
+      public:
+        MO(const std::string_view& unit_mode) :
+            unit_mode(UnitMode::fromString(unit_mode)) {}
+
+        std::string getNodeName() const override {
+            return "MO";
         }
     };
 
@@ -284,18 +335,16 @@ export namespace gerber {
         location_t                         global_index;
         // Regular expressions cache
         // G-codes
-        std::regex                         g_code_regex;
-        std::regex                         g04_regex;
+        std::regex                         g_code_regex{"^[Gg]0*([1-9][0-9]*)\\*"};
+        std::regex                         g04_regex{"^[Gg]0*4([^%*]+)\\*"};
         // Properties
-        std::regex                         fs_regex;
+        std::regex fs_regex{"^%FS([TL])([IA])X([0-9])([0-9])Y([0-9])([0-9])\\*%"};
+        std::regex mo_regex{"^%MO(IN|MM)\\*%"};
 
         Parser() :
             commands(0),
             full_source(""),
-            global_index(0),
-            g_code_regex("^[Gg]0*([1-9][0-9]*)\\*"),
-            g04_regex("^[Gg]0*4([^%*]+)\\*"),
-            fs_regex("^%FS([TL])([IA])X([0-9])([0-9])Y([0-9])([0-9])\\*%") {}
+            global_index(0) {}
 
         ~Parser() {}
 
@@ -449,6 +498,10 @@ export namespace gerber {
                     return parse_fs_command(source, index);
                     break;
 
+                case 'M':
+                    return parse_mo_command(source, index);
+                    break;
+
                 default:
                     break;
             }
@@ -478,6 +531,26 @@ export namespace gerber {
                     std::stoi(match[5].str()),
                     std::stoi(match[6].str())
                 ));
+                return match.length();
+            }
+            throw_syntax_error();
+        }
+
+        offset_t parse_mo_command(const std::string_view& source, const location_t& index) {
+            if (source.length() < 6) {
+                throw_syntax_error();
+            }
+            std::cmatch match;
+
+            const auto result = std::regex_search(
+                source.data(),
+                source.data() + source.size(),
+                match,
+                mo_regex,
+                std::regex_constants::match_continuous
+            );
+            if (result && match.size() == 2) {
+                commands.push_back(std::make_shared<MO>(match[1].str()));
                 return match.length();
             }
             throw_syntax_error();
