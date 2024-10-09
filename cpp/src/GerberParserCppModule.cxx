@@ -189,7 +189,7 @@ export namespace gerber {
             full_source(""),
             global_index(0),
             g_code_regex("^[Gg]0*([1-9][0-9]*)\\*"),
-            g04_regex("^[Gg]0*4([^%*])\\*") {}
+            g04_regex("^[Gg]0*4([^%*]+)\\*") {}
 
         ~Parser() {}
 
@@ -218,6 +218,13 @@ export namespace gerber {
                 case 'G':
                     return parse_g_code(sub_source, index);
                     break;
+
+                case ' ':
+                case '\n':
+                case '\r':
+                    return 1;
+                    break;
+
                 default:
                     break;
             }
@@ -225,9 +232,21 @@ export namespace gerber {
         }
 
         [[noreturn]] void throw_syntax_error() {
-            const auto [line, column] = get_line_column(full_source, global_index);
-            auto message              = std::format(
-                "Syntax error at index {} (line: {} column: {})", global_index, line, column
+            const auto [line, column]  = get_line_column(full_source, global_index);
+            const auto next_endl_index = full_source.find("\n", global_index);
+            const auto next_endl_or_end_index =
+                next_endl_index == std::string::npos ? full_source.size() : next_endl_index;
+
+            const auto end_index =
+                (next_endl_or_end_index - global_index) > 20 ? global_index + 20 : next_endl_index;
+            const auto source_view = full_source.substr(global_index, end_index);
+
+            auto message = std::format(
+                "Syntax error at index {} (line: {} column: {}): '{}'",
+                global_index,
+                line,
+                column,
+                source_view
             );
 
             throw SyntaxError(message);
@@ -295,7 +314,7 @@ export namespace gerber {
                 gerber.data(),
                 gerber.data() + gerber.size(),
                 match,
-                g_code_regex,
+                g04_regex,
                 std::regex_constants::match_continuous
             );
             if (result && match.size() > 1) {

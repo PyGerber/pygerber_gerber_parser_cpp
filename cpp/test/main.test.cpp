@@ -52,3 +52,13 @@ TEMPLATE_TEST_CASE_SIG(
         REQUIRE(node->getNodeName() == std::format("G{:0>2}", code));
     }
 }
+
+TEST_CASE("Parse G04 with content", "[g_codes]") {
+    gerber::Parser parser;
+    auto           gerber_source = "G04 Hello, world!*";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    REQUIRE(nodes[0]->getNodeName() == "G04");
+}
