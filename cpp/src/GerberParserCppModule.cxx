@@ -58,6 +58,8 @@ export namespace gerber {
         }
     };
 
+    // G-codes
+
     class G01 : public Command {
       public:
         std::string getNodeName() const override {
@@ -169,6 +171,106 @@ export namespace gerber {
         }
     };
 
+    // Properties
+
+    class Zeros {
+      public:
+        enum Enum : uint8_t {
+            SKIP_LEADING,
+            SKIP_TRAILING
+        };
+
+        Enum value;
+
+      private:
+        Zeros() = delete;
+
+      public:
+        Zeros(Enum value) :
+            value(value) {}
+
+        static Enum from_string(const std::string_view& str) {
+            if (str == "L") {
+                return Enum::SKIP_LEADING;
+            } else if (str == "T") {
+                return Enum::SKIP_TRAILING;
+            }
+            throw std::invalid_argument("Invalid zeros");
+        }
+
+        bool operator==(const Zeros& other) const {
+            return value == other.value;
+        }
+
+        bool operator==(const Enum& other) const {
+            return value == other;
+        }
+    };
+
+    class CoordinateNotation {
+      public:
+        enum Enum : uint8_t {
+            ABSOLUTE,
+            INCREMENTAL
+        };
+
+        Enum value;
+
+      private:
+        CoordinateNotation() = delete;
+
+      public:
+        CoordinateNotation(Enum value) :
+            value(value) {}
+
+        static CoordinateNotation from_string(const std::string_view& str) {
+            if (str == "A") {
+                return Enum::ABSOLUTE;
+            } else if (str == "I") {
+                return Enum::INCREMENTAL;
+            }
+            throw std::invalid_argument("Invalid coordinate notation");
+        }
+
+        bool operator==(const CoordinateNotation& other) const {
+            return value == other.value;
+        }
+
+        bool operator==(const Enum& other) const {
+            return value == other;
+        }
+    };
+
+    class FS : public ExtendedCommand {
+      public:
+        Zeros              zeros;
+        CoordinateNotation coordinate_mode;
+
+        int x_integral;
+        int x_decimal;
+
+        int y_integral;
+        int y_decimal;
+
+      public:
+        FS(const std::string_view& zeros,
+           const std::string_view& coordinate_mode,
+           int                     x_integral,
+           int                     x_decimal,
+           int                     y_integral,
+           int                     y_decimal) :
+            zeros(Zeros::from_string(zeros)),
+            coordinate_mode(CoordinateNotation::from_string(coordinate_mode)),
+            x_integral(x_integral),
+            x_decimal(x_decimal),
+            y_integral(y_integral),
+            y_decimal(y_decimal) {}
+
+        std::string getNodeName() const override {
+            return "FS";
+        }
+    };
+
     class SyntaxError : public std::runtime_error {
       public:
         explicit SyntaxError(const std::string& message) :
@@ -181,15 +283,19 @@ export namespace gerber {
         std::string_view                   full_source;
         location_t                         global_index;
         // Regular expressions cache
+        // G-codes
         std::regex                         g_code_regex;
         std::regex                         g04_regex;
+        // Properties
+        std::regex                         fs_regex;
 
         Parser() :
             commands(0),
             full_source(""),
             global_index(0),
             g_code_regex("^[Gg]0*([1-9][0-9]*)\\*"),
-            g04_regex("^[Gg]0*4([^%*]+)\\*") {}
+            g04_regex("^[Gg]0*4([^%*]+)\\*"),
+            fs_regex("^%FS([TL])([IA])X([0-9])([0-9])Y([0-9])([0-9])\\*%") {}
 
         ~Parser() {}
 
@@ -205,7 +311,7 @@ export namespace gerber {
             global_index = 0;
 
             while (global_index < (full_source.size() - 1)) {
-                global_index += parse_global(source, global_index);
+                global_index += parse_global(full_source, global_index);
             }
 
             return File(std::move(commands));
@@ -213,6 +319,9 @@ export namespace gerber {
 
         location_t parse_global(const std::string_view& source, const location_t& index) {
             const std::string_view sub_source{source.begin() + index, source.end()};
+            if (sub_source.empty()) {
+                return 0;
+            }
 
             switch (sub_source[0]) {
                 case 'G':
@@ -223,6 +332,10 @@ export namespace gerber {
                 case '\n':
                 case '\r':
                     return 1;
+                    break;
+
+                case '%':
+                    return parse_extended_command(sub_source, index);
                     break;
 
                 default:
@@ -322,6 +435,51 @@ export namespace gerber {
                 return match.length();
             }
 
+            throw_syntax_error();
+        }
+
+        offset_t parse_extended_command(const std::string_view& source, const location_t& index) {
+            // Shortest possible extended command is probably %TD*%, so 5 chars at least.
+            if (source.length() < 5) {
+                throw_syntax_error();
+            }
+
+            switch (source[1]) {
+                case 'F':
+                    return parse_fs_command(source, index);
+                    break;
+
+                default:
+                    break;
+            }
+
+            throw_syntax_error();
+        }
+
+        offset_t parse_fs_command(const std::string_view& source, const location_t& index) {
+            if (source.length() < 13) {
+                throw_syntax_error();
+            }
+            std::cmatch match;
+
+            const auto result = std::regex_search(
+                source.data(),
+                source.data() + source.size(),
+                match,
+                fs_regex,
+                std::regex_constants::match_continuous
+            );
+            if (result && match.size() == 7) {
+                commands.push_back(std::make_shared<FS>(
+                    match[1].str(),
+                    match[2].str(),
+                    std::stoi(match[3].str()),
+                    std::stoi(match[4].str()),
+                    std::stoi(match[5].str()),
+                    std::stoi(match[6].str())
+                ));
+                return match.length();
+            }
             throw_syntax_error();
         }
     };

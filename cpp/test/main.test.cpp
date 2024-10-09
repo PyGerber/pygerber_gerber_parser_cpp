@@ -62,3 +62,24 @@ TEST_CASE("Parse G04 with content", "[g_codes]") {
     REQUIRE(nodes.size() == 1);
     REQUIRE(nodes[0]->getNodeName() == "G04");
 }
+
+TEST_CASE("Parse FS", "[properties]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%FSLAX26Y26*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto fs = std::dynamic_pointer_cast<gerber::FS>(nodes[0]);
+
+    REQUIRE(fs->getNodeName() == "FS");
+
+    REQUIRE(fs->zeros == gerber::Zeros::SKIP_LEADING);
+    REQUIRE(fs->coordinate_mode == gerber::CoordinateNotation::ABSOLUTE);
+
+    REQUIRE(fs->x_integral == 2);
+    REQUIRE(fs->x_decimal == 6);
+
+    REQUIRE(fs->y_integral == 2);
+    REQUIRE(fs->y_decimal == 6);
+}

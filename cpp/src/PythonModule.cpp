@@ -1,3 +1,4 @@
+#include <stdexcept>
 import GerberParserCppModule;
 
 #include <pybind11/pybind11.h>
@@ -17,6 +18,7 @@ PYBIND11_MODULE(gerber_parser, m) {
 
     py::class_<gbr::Command>(m, "Command").def(py::init<>());
 
+    // G-codes
     py::class_<gbr::G01, std::shared_ptr<gbr::G01>>(m, "G01")
         .def(py::init<>())
         .def("__str__", &gbr::G01::getNodeName)
@@ -113,6 +115,29 @@ PYBIND11_MODULE(gerber_parser, m) {
         .def("__str__", &gbr::G91::getNodeName)
         .def("visit", [](py::object self, py::object visitor) {
             return visitor.attr("on_g91")(self);
+        });
+
+    // Properties
+    py::class_<gbr::FS, std::shared_ptr<gbr::FS>>(m, "FS")
+        .def(py::init<const std::string_view&, const std::string_view&, int, int, int, int>())
+        .def("__str__", &gbr::FS::getNodeName)
+        .def_property_readonly(
+            "zeros",
+            [](const gbr::FS& self) {
+                py::object pygerber_gerber_enums =
+                    py::module_::import("pygerber.gerber.ast.nodes.enums");
+
+                switch (self.zeros.value) {
+                    case gbr::Zeros::SKIP_LEADING:
+                        return pygerber_gerber_enums.attr("Zeros").attr("SKIP_LEADING");
+                    case gbr::Zeros::SKIP_TRAILING:
+                        return pygerber_gerber_enums.attr("Zeros").attr("SKIP_TRAILING");
+                }
+                throw std::runtime_error("Invalid 'zeros' value");
+            }
+        )
+        .def("visit", [](py::object self, py::object visitor) {
+            return visitor.attr("on_fs")(self);
         });
 
     py::class_<gbr::Parser>(m, "GerberParser").def(py::init<>()).def("parse", &gbr::Parser::parse);
