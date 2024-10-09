@@ -33,16 +33,16 @@ export namespace gerber {
 
     class File : public Node {
       private:
-        std::vector<std::unique_ptr<Node>> nodes;
+        std::vector<std::shared_ptr<Node>> nodes;
 
       public:
         File(File&& other) :
             nodes(std::move(other.nodes)) {}
 
-        File(std::vector<std::unique_ptr<Node>>&& nodes) :
+        File(std::vector<std::shared_ptr<Node>>&& nodes) :
             nodes(std::move(nodes)) {}
 
-        const std::vector<std::unique_ptr<Node>>& getNodes() const {
+        std::vector<std::shared_ptr<Node>>& getNodes() {
             return nodes;
         }
 
@@ -106,6 +106,20 @@ export namespace gerber {
         }
     };
 
+    class G54 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G54";
+        }
+    };
+
+    class G55 : public Command {
+      public:
+        std::string getNodeName() const override {
+            return "G55";
+        }
+    };
+
     class G70 : public Command {
       public:
         std::string getNodeName() const override {
@@ -163,7 +177,7 @@ export namespace gerber {
 
     class Parser {
       public:
-        std::vector<std::unique_ptr<Node>> commands;
+        std::vector<std::shared_ptr<Node>> commands;
         std::string_view                   full_source;
         location_t                         global_index;
         // Regular expressions cache
@@ -234,40 +248,46 @@ export namespace gerber {
 
                 switch (g_code_value) {
                     case 1:
-                        commands.push_back(std::make_unique<G01>());
+                        commands.push_back(std::make_shared<G01>());
                         return match.length();
                     case 2:
-                        commands.push_back(std::make_unique<G02>());
+                        commands.push_back(std::make_shared<G02>());
                         return match.length();
                     case 3:
-                        commands.push_back(std::make_unique<G03>());
+                        commands.push_back(std::make_shared<G03>());
                         return match.length();
                     case 4:
-                        commands.push_back(std::make_unique<G04>(""));
+                        commands.push_back(std::make_shared<G04>(""));
                         return match.length();
                     case 36:
-                        commands.push_back(std::make_unique<G36>());
+                        commands.push_back(std::make_shared<G36>());
                         return match.length();
                     case 37:
-                        commands.push_back(std::make_unique<G37>());
+                        commands.push_back(std::make_shared<G37>());
+                        return match.length();
+                    case 54:
+                        commands.push_back(std::make_shared<G54>());
+                        return match.length();
+                    case 55:
+                        commands.push_back(std::make_shared<G55>());
                         return match.length();
                     case 70:
-                        commands.push_back(std::make_unique<G70>());
+                        commands.push_back(std::make_shared<G70>());
                         return match.length();
                     case 71:
-                        commands.push_back(std::make_unique<G71>());
+                        commands.push_back(std::make_shared<G71>());
                         return match.length();
                     case 74:
-                        commands.push_back(std::make_unique<G74>());
+                        commands.push_back(std::make_shared<G74>());
                         return match.length();
                     case 75:
-                        commands.push_back(std::make_unique<G75>());
+                        commands.push_back(std::make_shared<G75>());
                         return match.length();
                     case 90:
-                        commands.push_back(std::make_unique<G90>());
+                        commands.push_back(std::make_shared<G90>());
                         return match.length();
                     case 91:
-                        commands.push_back(std::make_unique<G91>());
+                        commands.push_back(std::make_shared<G91>());
                         return match.length();
                 }
             }
@@ -279,7 +299,7 @@ export namespace gerber {
                 std::regex_constants::match_continuous
             );
             if (result && match.size() > 1) {
-                commands.push_back(std::make_unique<G04>(match[1].str()));
+                commands.push_back(std::make_shared<G04>(match[1].str()));
                 return match.length();
             }
 

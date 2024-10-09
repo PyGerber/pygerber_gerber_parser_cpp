@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pygerber-gerber-parser-cpp"
+version = "0.0.1"
+description = "Gerber parser implemented in C++"
+authors = ["Krzysztof Wiśniewski <argmaster.world@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+build = "build.py"
+packages = [{ include = "pygerber_gerber_parser_cpp", from = "python" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+cmake = "^3.30.4"
+ninja = "^1.11.1.1"
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core", "cmake>=3.28,<4.0", "ninja>=1.11.1"]
+build-backend = "poetry.core.masonry.api"
