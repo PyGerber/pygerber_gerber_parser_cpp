@@ -52,6 +52,28 @@ jobs:
                         libreadline-dev libsqlite3-dev wget curl llvm \
                         libncurses5-dev libncursesw5-dev xz-utils tk-dev \
                         libffi-dev liblzma-dev python3-openssl git
+          gcc --version
+          clang --version
+
+      - if: endsWith(matrix.os, '20.04')
+        name: Install ubuntu-20.04 specific dependencies
+        run: |
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+          sudo apt install gcc-14 g++-14
+          gcc --version
+
+      - if: endsWith(matrix.os, '22.04')
+        name: Install ubuntu-22.04 specific dependencies
+        run: |
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+          sudo apt install gcc-14 g++-14
+          gcc --version
 
       - if: endsWith(matrix.os, '24.04')
         name: Install ubuntu-24.04 specific dependencies
@@ -61,6 +83,7 @@ jobs:
           sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ jammy multiverse"
           sudo apt-get update
           sudo apt-get install -y libtinfo5
+          gcc --version
 
       - if: startsWith(matrix.os, 'windows')
         name: Install Python dependencies
