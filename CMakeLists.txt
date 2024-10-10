@@ -22,7 +22,7 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 ENDIF()
 
 ADD_LIBRARY(GerberParserCpp STATIC)
-TARGET_COMPILE_FEATURES(GerberParserCpp PRIVATE cxx_std_17)
+TARGET_COMPILE_FEATURES(GerberParserCpp PRIVATE cxx_std_20)
 SET_TARGET_PROPERTIES(GerberParserCpp
     PROPERTIES POSITION_INDEPENDENT_CODE ON
 )
@@ -52,7 +52,7 @@ CPMAddPackage(
 )
 
 pybind11_add_module(PyGerberGerberParserCpp cpp/python/gerber_parser.cpp)
-target_compile_features(PyGerberGerberParserCpp PRIVATE cxx_std_17)
+target_compile_features(PyGerberGerberParserCpp PRIVATE cxx_std_20)
 target_link_libraries(
     PyGerberGerberParserCpp
 PRIVATE
@@ -72,7 +72,7 @@ CPMAddPackage("gh:catchorg/Catch2@3.3.2")
 
 
 add_executable(tests)
-target_compile_features(tests PRIVATE cxx_std_17)
+target_compile_features(tests PRIVATE cxx_std_20)
 
 file(GLOB_RECURSE test_source_files ${PROJECT_SOURCE_DIR}/cpp/test/ *.test.cpp)
 target_sources(tests PRIVATE ${test_source_files})
