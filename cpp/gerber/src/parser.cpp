@@ -28,7 +28,7 @@ namespace gerber {
 
         // In gerber usually each command is in a new line, so this can be
         // a good guess for our initial size of a vector.
-        auto line_count = std::ranges::count(full_source, '\n');
+        auto line_count = std::count(full_source.begin(), full_source.end(), '\n');
         commands.clear();
         commands.reserve(line_count);
 
