@@ -28,7 +28,9 @@ class Builder:
 
     def build(self) -> None:
         """Build extension module."""
-        self.cmake("-S", ".", "-B", "build", "-DCMAKE_BUILD_TYPE=Release")
+        self.cmake(
+            "-S", ".", "-B", "build", "-DCMAKE_BUILD_TYPE=Release", "-G", "Ninja"
+        )
         self.cmake(
             "--build",
             "build",
