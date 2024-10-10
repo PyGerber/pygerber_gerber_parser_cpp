@@ -5,15 +5,26 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(cmake/CPM.cmake)
+
+CPMAddPackage(
+    NAME fmt
+    VERSION 8.0.1
+    URL https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.zip
+)
+
+
 add_library(GerberParserCppModule STATIC)
 target_sources(
     GerberParserCppModule PUBLIC
     FILE_SET cxx_modules TYPE CXX_MODULES FILES
     cpp/src/GerberParserCppModule.cxx
 )
+target_link_libraries(
+    GerberParserCppModule
+    PRIVATE fmt::fmt
+)
 target_compile_features(GerberParserCppModule PUBLIC cxx_std_20)
-
-include(cmake/CPM.cmake)
 
 # Download and load pybind11 with CMake Package Manager
 # See https://github.com/cpm-cmake/CPM.cmake/blob/master/README.md
@@ -24,7 +35,11 @@ CPMAddPackage(
 )
 
 pybind11_add_module(PyGerberGerberParserCpp cpp/src/PythonModule.cpp)
-target_link_libraries(PyGerberGerberParserCpp PRIVATE GerberParserCppModule)
+target_link_libraries(
+    PyGerberGerberParserCpp
+    PRIVATE fmt::fmt
+    PRIVATE GerberParserCppModule
+)
 target_compile_features(PyGerberGerberParserCpp PRIVATE cxx_std_20)
 
 add_custom_command(
@@ -46,5 +61,10 @@ file(GLOB_RECURSE test_source_files ${PROJECT_SOURCE_DIR}/cpp/test/ *.test.cpp)
 add_executable(tests)
 target_sources(tests PUBLIC ${test_source_files})
 
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain GerberParserCppModule)
+target_link_libraries(
+    tests
+    PRIVATE fmt::fmt
+    PRIVATE Catch2::Catch2WithMain
+    PRIVATE GerberParserCppModule
+)
 target_compile_features(tests PRIVATE cxx_std_20)

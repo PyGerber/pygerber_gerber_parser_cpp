@@ -1,5 +1,6 @@
 import GerberParserCppModule;
 
+#include "fmt/format.h"
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -42,14 +43,14 @@ TEMPLATE_TEST_CASE_SIG(
     (gerber::G91, 91)
 ) {
     gerber::Parser parser;
-    auto           gerber_source = std::format("G{}*G0{}*G00{}*G000{}*", code, code, code, code);
+    auto           gerber_source = fmt::format("G{}*G0{}*G00{}*G000{}*", code, code, code, code);
     auto           result        = parser.parse(gerber_source);
     const auto&    nodes         = result.getNodes();
 
     REQUIRE(nodes.size() == 4);
 
     for (const auto& node : nodes) {
-        REQUIRE(node->getNodeName() == std::format("G{:0>2}", code));
+        REQUIRE(node->getNodeName() == fmt::format("G{:0>2}", code));
     }
 }
 
@@ -93,7 +94,7 @@ TEMPLATE_TEST_CASE_SIG(
 ) {
     std::string    unitModeString = gerber::UnitMode(enumValue).toString();
     gerber::Parser parser;
-    auto           gerber_source = std::format("%MO{}*%", unitModeString);
+    auto           gerber_source = fmt::format("%MO{}*%", unitModeString);
     auto           result        = parser.parse(gerber_source);
     const auto&    nodes         = result.getNodes();
 

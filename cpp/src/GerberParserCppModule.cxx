@@ -1,8 +1,8 @@
 module;
 
+#include "fmt/format.h"
 #include <algorithm>
 #include <cstdint>
-#include <format>
 #include <memory>
 #include <regex>
 #include <stdexcept>
@@ -10,6 +10,7 @@ module;
 #include <string_view>
 #include <tuple>
 #include <vector>
+
 
 export module GerberParserCppModule;
 
@@ -403,7 +404,7 @@ export namespace gerber {
                 (next_endl_or_end_index - global_index) > 20 ? global_index + 20 : next_endl_index;
             const auto source_view = full_source.substr(global_index, end_index);
 
-            auto message = std::format(
+            auto message = fmt::format(
                 "Syntax error at index {} (line: {} column: {}): '{}'",
                 global_index,
                 line,
