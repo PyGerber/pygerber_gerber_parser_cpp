@@ -42,7 +42,7 @@ namespace gerber {
     }
 
     location_t Parser::parse_global(const std::string_view& source, const location_t& index) {
-        const std::string_view sub_source{source.begin() + index, source.size() - index};
+        const std::string_view sub_source = source.substr(index);
 
         if (sub_source.empty()) {
             return 0;

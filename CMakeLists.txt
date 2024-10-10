@@ -68,7 +68,7 @@ add_custom_command(
         ${PROJECT_SOURCE_DIR}/python/pygerber_gerber_parser_cpp/gerber_parser$<TARGET_FILE_SUFFIX:PyGerberGerberParserCpp>
 )
 
-CPMAddPackage("gh:catchorg/Catch2@3.3.2")
+CPMAddPackage("gh:catchorg/Catch2@3.7.1")
 
 
 add_executable(tests)
