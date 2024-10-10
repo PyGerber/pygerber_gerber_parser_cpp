@@ -40,13 +40,49 @@ jobs:
           arch: "x64"
           env: true
 
-      - if: matrix.os == 'ubuntu-24.04'
-        name: Install dependencies
-        run: sudo apt-get install libtinfo5
+      - if: startsWith(matrix.os, 'ubuntu')
+        name: Install ubuntu specific dependencies
+        run: |
+          sudo add-apt-repository universe
+          sudo add-apt-repository restricted
+          sudo add-apt-repository multiverse
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
+                        libreadline-dev libsqlite3-dev wget curl llvm \
+                        libncurses5-dev libncursesw5-dev xz-utils tk-dev \
+                        libffi-dev liblzma-dev python3-openssl git
 
-      - if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04' || matrix.os == 'ubuntu-24.04'
-        name: Set CXXFLAGS
-        run: export CXXFLAGS="-stdlib=libc++"
+      - if: endsWith(matrix.os, '20.04')
+        name: Install ubuntu-20.04 specific dependencies
+        run: |
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+          sudo apt install gcc-13 g++-13
+
+      - if: endsWith(matrix.os, '22.04')
+        name: Install ubuntu-22.04 specific dependencies
+        run: |
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+          sudo apt install gcc-13 g++-13
+
+      - if: endsWith(matrix.os, '24.04')
+        name: Install ubuntu-24.04 specific dependencies
+        run: |
+          sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ jammy main"
+          sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ jammy universe"
+          sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ jammy multiverse"
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+
+      - if: startsWith(matrix.os, 'windows')
+        name: Install Python dependencies
+        run: |
+          chcp 65001 #set code page to utf-8
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.2.0
@@ -57,13 +93,13 @@ jobs:
       - name: Install Poetry
         run: pip install poetry==1.8.3
 
-      - name: Install Python dependencies
-        run: poetry install --no-cache --sync
+      - name: Install project dependencies
+        run: poetry install --no-cache --sync --no-root
 
       - name: Build distribution package
         run: poetry build --format wheel
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}-${{ matrix.python-version }}
+          name: build-${{ github.sha }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: ./dist/*

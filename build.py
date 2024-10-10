@@ -8,19 +8,12 @@ import sys
 from pathlib import Path
 import multiprocessing
 
+
 THIS_DIR = Path(__file__).parent
 
 
 class Builder:
     """Class responsible for building epseon_backend binaries."""
-
-    DEPS: tuple[tuple[str, str], ...] = (
-        ("googletest", "release-1.12.1"),
-        ("spdlog", "v1.12.0"),
-        ("pybind11", "v2.11.1"),
-        ("fmt", "10.1.1"),
-        ("vma_hpp", "v3.0.1-3"),
-    )
 
     def __init__(self) -> None:
         """Initialize builder object."""
@@ -28,12 +21,20 @@ class Builder:
 
     def build(self) -> None:
         """Build extension module."""
+        build_directory = Path.cwd() / "build"
+        os.environ["PATH"] += os.pathsep + os.path.dirname(sys.executable)
         self.cmake(
-            "-S", ".", "-B", "build", "-DCMAKE_BUILD_TYPE=Release", "-G", "Ninja"
+            "-S",
+            ".",
+            "-B",
+            build_directory.as_posix(),
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-G",
+            "Ninja",
         )
         self.cmake(
             "--build",
-            "build",
+            build_directory.as_posix(),
             "--target",
             "PyGerberGerberParserCpp",
             "-j",
