@@ -40,6 +40,14 @@ jobs:
           arch: "x64"
           env: true
 
+      - if: matrix.os == 'ubuntu-24.04'
+        name: Install dependencies
+        run: sudo apt-get install libtinfo5
+
+      - if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04' || matrix.os == 'ubuntu-24.04'
+        name: Set CXXFLAGS
+        run: export CXXFLAGS="-stdlib=libc++"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.2.0
         with:
@@ -53,7 +61,7 @@ jobs:
         run: poetry install --no-cache --sync
 
       - name: Build distribution package
-        run: poetry build
+        run: poetry build --format wheel
 
       - uses: actions/upload-artifact@v4
         with:
