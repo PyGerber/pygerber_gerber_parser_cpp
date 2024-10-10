@@ -1,5 +1,11 @@
 {
     "python.testing.pytestArgs": ["python"],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "cSpell.words": [
+        "-DCMAKE_BUILD_TYPE",
+        "CMAKE_BUILD_TYPE",
+        "pygerber",
+        "PYGPP_BUILD"
+    ]
 }

@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import multiprocessing
 import os
 import platform
 import subprocess
 import sys
 from pathlib import Path
-import multiprocessing
-
 
 THIS_DIR = Path(__file__).parent
 
@@ -24,7 +23,9 @@ class Builder:
     def build(self) -> None:
         """Build extension module."""
         build_directory = Path.cwd() / "build"
-        os.environ["PATH"] += os.pathsep + os.path.dirname(sys.executable)
+        os.environ["PATH"] += os.pathsep + os.path.dirname(  # noqa: PTH120
+            sys.executable
+        )
         self.cmake(
             "-S",
             ".",
@@ -45,12 +46,12 @@ class Builder:
 
     def cmake(self, *arg: str) -> None:
         """Run cmake command. If fails, raises CalledProcessError."""
-        print("cmake", *arg)
-        python_executable_directory = os.path.dirname(sys.executable)
+        print("cmake", *arg)  # noqa: T201
+        python_executable_directory = os.path.dirname(sys.executable)  # noqa: PTH120
 
         if platform.system() == "Windows":
             cmake_executable = python_executable_directory + os.path.sep + "cmake.exe"
-        elif platform.system() == "Linux":
+        elif platform.system() == "Linux":  # noqa: SIM114
             cmake_executable = python_executable_directory + os.path.sep + "cmake"
         elif platform.system() == "Darwin":
             cmake_executable = python_executable_directory + os.path.sep + "cmake"
@@ -69,9 +70,9 @@ class Builder:
         )
 
 
-print(sys.argv)
+print(sys.argv)  # noqa: T201
 
 if "--no-root" in sys.argv:
-    print("Skipping building of root package.")
+    print("Skipping building of root package.")  # noqa: T201
 else:
     Builder(os.environ.get("PYGPP_BUILD", "DEBUG")).build()
