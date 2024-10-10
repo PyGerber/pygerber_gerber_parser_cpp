@@ -5,7 +5,7 @@ description = "Gerber parser implemented in C++"
 authors = ["Krzysztof Wiśniewski <argmaster.world@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-build = "build.py"
+build = "__build__.py"
 packages = [{ include = "pygerber_gerber_parser_cpp", from = "python" }]
 
 [tool.poetry.dependencies]

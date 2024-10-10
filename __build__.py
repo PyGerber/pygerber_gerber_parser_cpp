@@ -1,8 +1,9 @@
-"""Build script for epseon_backend package."""
+"""Build script for pygerber_gerber_parser_cpp package."""
 
 from __future__ import annotations
 
 import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -13,11 +14,12 @@ THIS_DIR = Path(__file__).parent
 
 
 class Builder:
-    """Class responsible for building epseon_backend binaries."""
+    """Class responsible for building pygerber_gerber_parser_cpp binaries."""
 
-    def __init__(self) -> None:
+    def __init__(self, build_type: str) -> None:
         """Initialize builder object."""
         self.repo_path = Path(__file__).parent
+        self.build_type = build_type
 
     def build(self) -> None:
         """Build extension module."""
@@ -28,7 +30,7 @@ class Builder:
             ".",
             "-B",
             build_directory.as_posix(),
-            "-DCMAKE_BUILD_TYPE=Release",
+            f"-DCMAKE_BUILD_TYPE={self.build_type}",
             "-G",
             "Ninja",
         )
@@ -44,12 +46,22 @@ class Builder:
     def cmake(self, *arg: str) -> None:
         """Run cmake command. If fails, raises CalledProcessError."""
         print("cmake", *arg)
+        python_executable_directory = os.path.dirname(sys.executable)
+
+        if platform.system() == "Windows":
+            cmake_executable = python_executable_directory + os.path.sep + "cmake.exe"
+        elif platform.system() == "Linux":
+            cmake_executable = python_executable_directory + os.path.sep + "cmake"
+        elif platform.system() == "Darwin":
+            cmake_executable = python_executable_directory + os.path.sep + "cmake"
+        else:
+            msg = f"Unsupported platform: {platform.system()}"
+            raise NotImplementedError(msg)
+
         subprocess.check_call(
-            executable=sys.executable,
+            executable=cmake_executable,
             args=[
-                sys.executable,
-                "-c",
-                "import cmake;cmake.cmake()",
+                cmake_executable,
                 *arg,
             ],
             env=os.environ,
@@ -57,4 +69,9 @@ class Builder:
         )
 
 
-Builder().build()
+print(sys.argv)
+
+if "--no-root" in sys.argv:
+    print("Skipping building of root package.")
+else:
+    Builder(os.environ.get("PYGPP_BUILD", "DEBUG")).build()

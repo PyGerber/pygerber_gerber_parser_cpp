@@ -1,6 +1,6 @@
 #include <stdexcept>
-import GerberParserCppModule;
 
+#include "gerber/gerber.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
