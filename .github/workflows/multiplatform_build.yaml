@@ -38,6 +38,7 @@ jobs:
         with:
           version: "18"
           arch: "x64"
+          env: true
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5.2.0
