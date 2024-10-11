@@ -1,12 +1,9 @@
 #pragma once
-#include "fmt/format.h"
 #include "gerber/ast/ast.hpp"
 #include "gerber/errors.hpp"
-#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <regex>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -25,6 +22,8 @@ namespace gerber {
         std::string_view                   full_source;
         location_t                         global_index;
         // Regular expressions cache
+        // D-codes
+        std::regex                         d_code_regex{"^[Dd]0*([1-9][0-9]*)\\*"};
         // G-codes
         std::regex                         g_code_regex{"^[Gg]0*([1-9][0-9]*)\\*"};
         std::regex                         g04_regex{"^[Gg]0*4([^%*]+)\\*"};
@@ -39,6 +38,7 @@ namespace gerber {
         location_t        parse_global(const std::string_view& source, const location_t& index);
         [[noreturn]] void throw_syntax_error();
         offset_t          parse_g_code(const std::string_view& gerber, const location_t& index);
+        offset_t          parse_d_code(const std::string_view& source, const location_t& index);
 
         template <typename coordinate_type>
         offset_t parse_coordinate(const std::string_view& source, const location_t& index) {

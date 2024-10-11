@@ -4,6 +4,11 @@
 #include "./file.hpp"
 #include "./node.hpp"
 
+#include "./d_codes/D01.hpp"
+#include "./d_codes/D02.hpp"
+#include "./d_codes/D03.hpp"
+#include "./d_codes/Dnn.hpp"
+
 #include "./g_codes/G01.hpp"
 #include "./g_codes/G02.hpp"
 #include "./g_codes/G03.hpp"

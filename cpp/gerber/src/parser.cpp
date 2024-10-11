@@ -1,6 +1,5 @@
 #include "gerber/parser.hpp"
 #include "gerber/ast/ast.hpp"
-#include "gerber/ast/other/coordinate.hpp"
 #include <algorithm>
 #include <cassert>
 #include <fmt/format.h>
@@ -51,6 +50,10 @@ namespace gerber {
         switch (source[0]) {
             case 'G':
                 return parse_g_code(source, index);
+                break;
+
+            case 'D':
+                return parse_d_code(source, index);
                 break;
 
             case 'X':
@@ -110,7 +113,8 @@ namespace gerber {
             std::regex_constants::match_continuous
         );
         if (result && match.size() > 1) {
-            const auto g_code_value = std::stoi(match[1].str());
+            auto       match_string = match[1].str();
+            const auto g_code_value = std::stoi(match_string);
 
             switch (g_code_value) {
                 case 1:
@@ -167,6 +171,39 @@ namespace gerber {
         if (result && match.size() > 1) {
             commands.push_back(std::make_shared<G04>(match[1].str()));
             return match.length();
+        }
+
+        throw_syntax_error();
+    }
+
+    offset_t Parser::parse_d_code(const std::string_view& gerber, const location_t& index) {
+        std::cmatch match;
+
+        bool result = std::regex_search(
+            gerber.data(),
+            gerber.data() + gerber.size(),
+            match,
+            d_code_regex,
+            std::regex_constants::match_continuous
+        );
+        if (result && match.size() > 1) {
+            auto       match_string = match[1].str();
+            const auto g_code_value = std::stoi(match_string);
+
+            switch (g_code_value) {
+                case 1:
+                    commands.push_back(std::make_shared<D01>());
+                    return match.length();
+                case 2:
+                    commands.push_back(std::make_shared<D02>());
+                    return match.length();
+                case 3:
+                    commands.push_back(std::make_shared<D03>());
+                    return match.length();
+                default:
+                    commands.push_back(std::make_shared<Dnn>(match_string));
+                    return match.length();
+            }
         }
 
         throw_syntax_error();

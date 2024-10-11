@@ -1,7 +1,9 @@
 #include "fmt/format.h"
+#include "gerber/ast/d_codes/Dnn.hpp"
 #include "gerber/ast/other/coordinate.hpp"
 #include "gerber/gerber.hpp"
 #include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <tuple>
 
 TEST_CASE("SyntaxError", "[exceptions]") {
@@ -21,6 +23,53 @@ TEST_CASE("SyntaxError from parser", "[exceptions]") {
         }(),
         gerber::SyntaxError
     );
+}
+
+// D codes
+
+TEMPLATE_TEST_CASE_SIG(
+    "Parse D codes",
+    "[d_codes]",
+    ((typename T, int code), T, code),
+    (gerber::D01, 1),
+    (gerber::D02, 2),
+    (gerber::D03, 3)
+) {
+    gerber::Parser parser;
+    auto           gerber_source = fmt::format("D{}*D0{}*D00{}*D000{}*", code, code, code, code);
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 4);
+
+    for (const auto& node : nodes) {
+        REQUIRE(node->getNodeName() == fmt::format("D{:0>2}", code));
+    }
+}
+
+TEST_CASE("Parse Dnn codes", "[d_codes]") {
+    gerber::Parser parser;
+    auto           gerber_source = "D4*D32*D99*D999*";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 4);
+    auto d0 = std::dynamic_pointer_cast<gerber::Dnn>(nodes[0]);
+    auto d1 = std::dynamic_pointer_cast<gerber::Dnn>(nodes[1]);
+    auto d2 = std::dynamic_pointer_cast<gerber::Dnn>(nodes[2]);
+    auto d3 = std::dynamic_pointer_cast<gerber::Dnn>(nodes[3]);
+
+    REQUIRE(d0->getNodeName() == "Dnn");
+    REQUIRE(d0->getApertureId() == "4");
+
+    REQUIRE(d1->getNodeName() == "Dnn");
+    REQUIRE(d1->getApertureId() == "32");
+
+    REQUIRE(d2->getNodeName() == "Dnn");
+    REQUIRE(d2->getApertureId() == "99");
+
+    REQUIRE(d3->getNodeName() == "Dnn");
+    REQUIRE(d3->getApertureId() == "999");
 }
 
 // G codes
