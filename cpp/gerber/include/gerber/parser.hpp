@@ -32,6 +32,8 @@ namespace gerber {
         // Properties
         std::regex fs_regex{"^%FS([TL])([IA])X([0-9])([0-9])Y([0-9])([0-9])\\*%"};
         std::regex mo_regex{"^%MO(IN|MM)\\*%"};
+        // M-codes
+        std::regex m_code_regex{"^[Mm]0*([1-9][0-9]*)\\*"};
         // Helper regex
         std::regex float_regex{"([+-]?((([0-9]+)(\\.[0-9]*)?)|(\\.[0-9]+)))"};
 
@@ -101,6 +103,7 @@ namespace gerber {
         std::string match_float(const std::string_view& source);
 
         offset_t parse_g_code(const std::string_view& gerber, const location_t& index);
+        offset_t parse_m_code(const std::string_view& gerber);
         offset_t parse_d_code(const std::string_view& source, const location_t& index);
 
         template <typename coordinate_type>

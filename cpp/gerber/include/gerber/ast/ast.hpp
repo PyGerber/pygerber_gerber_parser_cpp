@@ -32,6 +32,8 @@
 
 #include "./load/LP.hpp"
 
+#include "./m_codes/M02.hpp"
+
 #include "./other/coordinate.hpp"
 #include "./other/coordinate_i.hpp"
 #include "./other/coordinate_j.hpp"

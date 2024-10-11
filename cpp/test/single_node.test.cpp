@@ -1,6 +1,4 @@
 #include "fmt/format.h"
-#include "gerber/ast/d_codes/Dnn.hpp"
-#include "gerber/ast/other/coordinate.hpp"
 #include "gerber/gerber.hpp"
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -256,6 +254,27 @@ TEST_CASE("Parse G04 with content", "[g_codes]") {
 
     REQUIRE(nodes.size() == 1);
     REQUIRE(nodes[0]->getNodeName() == "G04");
+}
+
+
+// M codes
+
+TEMPLATE_TEST_CASE_SIG(
+    "Parse M codes",
+    "[m_codes]",
+    ((typename T, int code), T, code),
+    (gerber::M02, 2)
+) {
+    gerber::Parser parser;
+    auto           gerber_source = fmt::format("M{}*M0{}*M00{}*M000{}*", code, code, code, code);
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 4);
+
+    for (const auto& node : nodes) {
+        REQUIRE(node->getNodeName() == fmt::format("M{:0>2}", code));
+    }
 }
 
 // Load
