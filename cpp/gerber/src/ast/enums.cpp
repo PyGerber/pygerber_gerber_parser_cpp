@@ -68,4 +68,36 @@ namespace gerber {
     bool UnitMode::operator==(const Enum& other) const {
         return value == other;
     }
+
+    Polarity::Polarity(Enum value) :
+        value(value) {}
+
+    Polarity Polarity::fromString(const std::string_view& str) {
+        if (str.length() == 0) {
+            throw std::invalid_argument("Invalid unit mode");
+        }
+        return fromString(str[0]);
+    }
+
+    Polarity Polarity::fromString(const char polarity) {
+        switch (polarity) {
+            case 'D':
+                return Polarity::Enum::DARK;
+            case 'C':
+                return Polarity::Enum::CLEAR;
+        }
+        throw std::invalid_argument("Invalid unit mode");
+    }
+
+    std::string Polarity::toString() const {
+        return value == Enum::DARK ? "D" : "C";
+    }
+
+    bool Polarity::operator==(const Polarity& other) const {
+        return value == other.value;
+    }
+
+    bool Polarity::operator==(const Enum& other) const {
+        return value == other;
+    }
 } // namespace gerber

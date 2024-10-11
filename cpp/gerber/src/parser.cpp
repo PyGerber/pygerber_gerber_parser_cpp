@@ -35,22 +35,20 @@ namespace gerber {
         global_index = 0;
 
         while (global_index < (full_source.size() - 1)) {
-            global_index += parse_global(full_source, global_index);
+            global_index += parse_global(full_source.substr(global_index), global_index);
         }
 
         return File(std::move(commands));
     }
 
     location_t Parser::parse_global(const std::string_view& source, const location_t& index) {
-        const std::string_view sub_source = source.substr(index);
-
-        if (sub_source.empty()) {
+        if (source.empty()) {
             return 0;
         }
 
-        switch (sub_source[0]) {
+        switch (source[0]) {
             case 'G':
-                return parse_g_code(sub_source, index);
+                return parse_g_code(source, index);
                 break;
 
             case ' ':
@@ -60,7 +58,7 @@ namespace gerber {
                 break;
 
             case '%':
-                return parse_extended_command(sub_source, index);
+                return parse_extended_command(source, index);
                 break;
 
             default:
@@ -177,6 +175,38 @@ namespace gerber {
 
             case 'M':
                 return parse_mo_command(source, index);
+                break;
+
+            case 'L':
+                return parse_load_command(source, index);
+                break;
+
+            default:
+                break;
+        }
+
+        throw_syntax_error();
+    }
+
+    offset_t Parser::parse_load_command(const std::string_view& source, const location_t& index) {
+        // Shortest possible load command is %LPD*%, so 6 chars at least.
+        if (source.length() < 6) {
+            throw_syntax_error();
+        }
+        // Char 0 is %, char 1 is L, char 2 indicates specific command.
+        switch (source[2]) {
+            case 'P':
+                if (source[3] != 'D' && source[3] != 'C') {
+                    throw_syntax_error();
+                }
+                if (source[4] != '*') {
+                    throw_syntax_error();
+                }
+                if (source[5] != '%') {
+                    throw_syntax_error();
+                }
+                commands.push_back(std::make_shared<LP>(source[3]));
+                return 6;
                 break;
 
             default:

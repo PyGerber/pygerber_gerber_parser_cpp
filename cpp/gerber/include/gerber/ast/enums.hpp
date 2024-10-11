@@ -62,4 +62,25 @@ namespace gerber {
         bool            operator==(const UnitMode& other) const;
         bool            operator==(const Enum& other) const;
     };
+
+    class Polarity {
+      public:
+        enum Enum : uint8_t {
+            DARK,
+            CLEAR
+        };
+
+        Enum value;
+
+      private:
+        Polarity() = delete;
+
+      public:
+        Polarity(Enum value);
+        static Polarity fromString(const std::string_view& str);
+        static Polarity fromString(const char str);
+        std::string     toString() const;
+        bool            operator==(const Polarity& other) const;
+        bool            operator==(const Enum& other) const;
+    };
 } // namespace gerber

@@ -19,5 +19,7 @@
 #include "gerber/ast/g_codes/G90.hpp"
 #include "gerber/ast/g_codes/G91.hpp"
 
+#include "gerber/ast/load/LP.hpp"
+
 #include "gerber/ast/properties/FS.hpp"
 #include "gerber/ast/properties/MO.hpp"

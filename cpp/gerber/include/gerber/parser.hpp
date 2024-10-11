@@ -41,6 +41,7 @@ namespace gerber {
         offset_t          parse_g_code(const std::string_view& gerber, const location_t& index);
 
         offset_t parse_extended_command(const std::string_view& source, const location_t& index);
+        offset_t parse_load_command(const std::string_view& source, const location_t& index);
         offset_t parse_fs_command(const std::string_view& source, const location_t& index);
         offset_t parse_mo_command(const std::string_view& source, const location_t& index);
     };

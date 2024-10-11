@@ -22,6 +22,8 @@ TEST_CASE("SyntaxError from parser", "[exceptions]") {
     );
 }
 
+// G codes
+
 TEMPLATE_TEST_CASE_SIG(
     "Parse G codes",
     "[g_codes]",
@@ -62,6 +64,31 @@ TEST_CASE("Parse G04 with content", "[g_codes]") {
     REQUIRE(nodes.size() == 1);
     REQUIRE(nodes[0]->getNodeName() == "G04");
 }
+
+// Load
+
+TEMPLATE_TEST_CASE_SIG(
+    "Parse LP",
+    "[load]",
+    ((gerber::Polarity::Enum enumValue), enumValue),
+    (gerber::Polarity::DARK),
+    (gerber::Polarity::CLEAR)
+) {
+    std::string    unitModeString = gerber::Polarity(enumValue).toString();
+    gerber::Parser parser;
+    auto           gerber_source = fmt::format("%LP{}*%", unitModeString);
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto node = std::dynamic_pointer_cast<gerber::LP>(nodes[0]);
+
+    REQUIRE(node->getNodeName() == "LP");
+
+    REQUIRE(node->polarity == enumValue);
+}
+
+// Properties
 
 TEST_CASE("Parse FS", "[properties]") {
     gerber::Parser parser;
