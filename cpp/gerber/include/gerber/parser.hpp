@@ -40,6 +40,32 @@ namespace gerber {
         [[noreturn]] void throw_syntax_error();
         offset_t          parse_g_code(const std::string_view& gerber, const location_t& index);
 
+        template <typename coordinate_type>
+        offset_t parse_coordinate(const std::string_view& source, const location_t& index) {
+            // Shortest possible X coordinate is X0* or alike.
+            if (source.length() < 3) {
+                throw_syntax_error();
+            }
+
+            auto length = parse_integer(source.substr(1));
+            commands.push_back(std::make_shared<coordinate_type>(source.substr(1, length)));
+
+            return 1 + length;
+        }
+
+        offset_t parse_integer(const std::string_view& source);
+
+        template <typename lambda_t>
+        offset_t parse_while_predicate(lambda_t char_predicate, const std::string_view& source) {
+            offset_t substring_length = 0;
+            auto     source_length    = source.length();
+
+            while (substring_length < source_length && char_predicate(source[substring_length])) {
+                substring_length++;
+            }
+            return substring_length;
+        }
+
         offset_t parse_extended_command(const std::string_view& source, const location_t& index);
         offset_t parse_load_command(const std::string_view& source, const location_t& index);
         offset_t parse_fs_command(const std::string_view& source, const location_t& index);

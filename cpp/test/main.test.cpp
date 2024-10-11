@@ -1,7 +1,8 @@
 #include "fmt/format.h"
+#include "gerber/ast/other/coordinate.hpp"
 #include "gerber/gerber.hpp"
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_all.hpp>
+#include <tuple>
 
 TEST_CASE("SyntaxError", "[exceptions]") {
     REQUIRE_THROWS_AS(
@@ -86,6 +87,46 @@ TEMPLATE_TEST_CASE_SIG(
     REQUIRE(node->getNodeName() == "LP");
 
     REQUIRE(node->polarity == enumValue);
+}
+
+// Other
+
+TEST_CASE("Parse single coordinate", "[other]", ) {
+    using tuple_t = std::tuple<const char*, const char*, const char*>;
+
+    gerber::Parser parser;
+    auto           params = GENERATE(
+        tuple_t{"X01000000", "X", "01000000"},
+        tuple_t{"Y01000002", "Y", "01000002"},
+        tuple_t{"I01003200", "I", "01003200"},
+        tuple_t{"J32000000", "J", "32000000"}
+    );
+    auto        result = parser.parse(std::get<0>(params));
+    const auto& nodes  = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto node = std::dynamic_pointer_cast<gerber::Coordinate>(nodes[0]);
+
+    REQUIRE(node->getNodeName() == std::get<1>(params));
+    REQUIRE(node->getValue() == std::get<2>(params));
+}
+
+TEST_CASE("Two coordinates one after another", "[other]") {
+    gerber::Parser parser;
+    auto           gerber_source = "X01000000Y01000002";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 2);
+
+    auto x = std::dynamic_pointer_cast<gerber::CoordinateX>(nodes[0]);
+    auto y = std::dynamic_pointer_cast<gerber::CoordinateY>(nodes[1]);
+
+    REQUIRE(x->getNodeName() == "X");
+    REQUIRE(x->getValue() == "01000000");
+
+    REQUIRE(y->getNodeName() == "Y");
+    REQUIRE(y->getValue() == "01000002");
 }
 
 // Properties

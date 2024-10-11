@@ -1,6 +1,8 @@
 #include "gerber/parser.hpp"
 #include "gerber/ast/ast.hpp"
+#include "gerber/ast/other/coordinate.hpp"
 #include <algorithm>
+#include <cassert>
 #include <fmt/format.h>
 #include <memory>
 #include <regex>
@@ -50,6 +52,15 @@ namespace gerber {
             case 'G':
                 return parse_g_code(source, index);
                 break;
+
+            case 'X':
+                return parse_coordinate<CoordinateX>(source, index);
+            case 'Y':
+                return parse_coordinate<CoordinateY>(source, index);
+            case 'I':
+                return parse_coordinate<CoordinateI>(source, index);
+            case 'J':
+                return parse_coordinate<CoordinateJ>(source, index);
 
             case ' ':
             case '\n':
@@ -159,6 +170,25 @@ namespace gerber {
         }
 
         throw_syntax_error();
+    }
+
+    offset_t Parser::parse_integer(const std::string_view& source) {
+        // Shortest possible integer is 0* or alike.
+        if (source.empty()) {
+            throw_syntax_error();
+        }
+        auto integer_length = parse_while_predicate(
+            [](char c) {
+                return std::isdigit(c);
+            },
+            source
+        );
+
+        if (integer_length == 0) {
+            throw_syntax_error();
+        }
+
+        return integer_length;
     }
 
     offset_t
