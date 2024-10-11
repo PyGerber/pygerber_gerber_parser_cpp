@@ -25,6 +25,149 @@ TEST_CASE("SyntaxError from parser", "[exceptions]") {
     );
 }
 
+// Aperture
+
+TEST_CASE("Parse ADC", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10C,0.5*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adc = std::dynamic_pointer_cast<gerber::ADC>(nodes[0]);
+
+    REQUIRE(adc->getNodeName() == "ADC");
+
+    REQUIRE(adc->getApertureId() == "10");
+    REQUIRE(adc->getDiameter() == 0.5);
+    REQUIRE_FALSE(adc->getHoleDiameter().has_value());
+}
+
+TEST_CASE("Parse ADC with hole", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10C,0.5X0.1*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adc = std::dynamic_pointer_cast<gerber::ADC>(nodes[0]);
+
+    REQUIRE(adc->getNodeName() == "ADC");
+
+    REQUIRE(adc->getApertureId() == "10");
+    REQUIRE(adc->getDiameter() == 0.5);
+    REQUIRE(adc->getHoleDiameter().has_value());
+    REQUIRE(adc->getHoleDiameter().value() == 0.1);
+}
+
+TEST_CASE("Parse ADR", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10R,0.5X0.5*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adr = std::dynamic_pointer_cast<gerber::ADR>(nodes[0]);
+
+    REQUIRE(adr->getNodeName() == "ADR");
+
+    REQUIRE(adr->getApertureId() == "10");
+    REQUIRE(adr->getWidth() == 0.5);
+    REQUIRE(adr->getHeight() == 0.5);
+    REQUIRE_FALSE(adr->getHoleDiameter().has_value());
+}
+
+TEST_CASE("Parse ADR with hole", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10R,0.5X0.5X0.1*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adr = std::dynamic_pointer_cast<gerber::ADR>(nodes[0]);
+
+    REQUIRE(adr->getNodeName() == "ADR");
+
+    REQUIRE(adr->getApertureId() == "10");
+    REQUIRE(adr->getWidth() == 0.5);
+    REQUIRE(adr->getHeight() == 0.5);
+    REQUIRE(adr->getHoleDiameter().has_value());
+    REQUIRE(adr->getHoleDiameter().value() == 0.1);
+}
+
+TEST_CASE("Parse ADO", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10O,0.5X0.5*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto ado = std::dynamic_pointer_cast<gerber::ADO>(nodes[0]);
+
+    REQUIRE(ado->getNodeName() == "ADO");
+
+    REQUIRE(ado->getApertureId() == "10");
+    REQUIRE(ado->getWidth() == 0.5);
+    REQUIRE(ado->getHeight() == 0.5);
+    REQUIRE_FALSE(ado->getHoleDiameter().has_value());
+}
+
+TEST_CASE("Parse ADO with hole", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10O,0.5X0.5X0.1*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto ado = std::dynamic_pointer_cast<gerber::ADO>(nodes[0]);
+
+    REQUIRE(ado->getNodeName() == "ADO");
+
+    REQUIRE(ado->getApertureId() == "10");
+    REQUIRE(ado->getWidth() == 0.5);
+    REQUIRE(ado->getHeight() == 0.5);
+    REQUIRE(ado->getHoleDiameter().has_value());
+    REQUIRE(ado->getHoleDiameter().value() == 0.1);
+}
+
+TEST_CASE("Parse ADP", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10P,0.5X5*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adp = std::dynamic_pointer_cast<gerber::ADP>(nodes[0]);
+
+    REQUIRE(adp->getNodeName() == "ADP");
+
+    REQUIRE(adp->getApertureId() == "10");
+    REQUIRE(adp->getOuterDiameter() == 0.5);
+    REQUIRE(adp->getVerticesCount() == 5.0);
+    REQUIRE_FALSE(adp->getRotation().has_value());
+    REQUIRE_FALSE(adp->getHoleDiameter().has_value());
+}
+
+TEST_CASE("Parse ADP with hole", "[aperture]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%ADD10P,0.5X5X0X0.1*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto adp = std::dynamic_pointer_cast<gerber::ADP>(nodes[0]);
+
+    REQUIRE(adp->getNodeName() == "ADP");
+
+    REQUIRE(adp->getApertureId() == "10");
+    REQUIRE(adp->getOuterDiameter() == 0.5);
+    REQUIRE(adp->getVerticesCount() == 5.0);
+    REQUIRE(adp->getRotation().has_value());
+    REQUIRE(adp->getRotation().value() == 0.0);
+    REQUIRE(adp->getHoleDiameter().has_value());
+    REQUIRE(adp->getHoleDiameter().value() == 0.1);
+}
+
 // D codes
 
 TEMPLATE_TEST_CASE_SIG(

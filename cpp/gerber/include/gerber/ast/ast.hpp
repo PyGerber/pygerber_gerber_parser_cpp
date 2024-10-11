@@ -4,6 +4,12 @@
 #include "./file.hpp"
 #include "./node.hpp"
 
+#include "./aperture/AD.hpp"
+#include "./aperture/ADC.hpp"
+#include "./aperture/ADO.hpp"
+#include "./aperture/ADR.hpp"
+#include "./aperture/ADP.hpp"
+
 #include "./d_codes/D01.hpp"
 #include "./d_codes/D02.hpp"
 #include "./d_codes/D03.hpp"

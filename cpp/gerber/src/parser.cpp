@@ -4,6 +4,7 @@
 #include <cassert>
 #include <fmt/format.h>
 #include <memory>
+#include <optional>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -48,6 +49,12 @@ namespace gerber {
         }
 
         switch (source[0]) {
+            case ' ':
+            case '\n':
+            case '\r':
+                return 1;
+                break;
+
             case 'G':
                 return parse_g_code(source, index);
                 break;
@@ -64,12 +71,6 @@ namespace gerber {
                 return parse_coordinate<CoordinateI>(source, index);
             case 'J':
                 return parse_coordinate<CoordinateJ>(source, index);
-
-            case ' ':
-            case '\n':
-            case '\r':
-                return 1;
-                break;
 
             case '%':
                 return parse_extended_command(source, index);
@@ -100,6 +101,174 @@ namespace gerber {
         );
 
         throw SyntaxError(message);
+    }
+
+    offset_t Parser::parse_aperture(const std::string_view& source) {
+        // Shortest possible aperture related node is %AB*%, so 5 chars at least.
+        if (source.length() < 5) {
+            throw_syntax_error();
+        }
+
+        switch (source[2]) {
+            case 'D':
+                return parse_aperture_definition(source);
+                break;
+
+            default:
+                break;
+        }
+
+        throw_syntax_error();
+    }
+
+    offset_t Parser::parse_aperture_definition(const std::string_view& source) {
+        std::cmatch match;
+
+        const auto result = std::regex_search(
+            source.data(),
+            source.data() + source.size(),
+            match,
+            ad_header_regex,
+            std::regex_constants::match_continuous
+        );
+
+        auto offset = 0;
+
+        if (result && match.size() == 3) {
+            const auto aperture_id   = match[1].str();
+            const auto template_name = match[2].str();
+            offset += match.length();
+
+            if (template_name.length() == 0) {
+                throw_syntax_error();
+            }
+            if (template_name.length() == 1) {
+                assert(source.length() > match.length());
+
+                char             standard_template_symbol = template_name[0];
+                std::string_view rest                     = source.substr(match.length());
+
+                if (rest.empty()) {
+                    throw_syntax_error();
+                }
+
+                switch (standard_template_symbol) {
+                    case 'C':
+                        return offset + parse_standard_aperture_c_tail(rest, aperture_id);
+                    case 'R':
+                        return offset + parse_standard_aperture_r_like_tail<ADR>(rest, aperture_id);
+                    case 'O':
+                        return offset + parse_standard_aperture_r_like_tail<ADO>(rest, aperture_id);
+                    case 'P':
+                        return offset + parse_standard_aperture_p_tail(rest, aperture_id);
+                    default:
+                        throw_syntax_error();
+                }
+            }
+            // Handling of macros not implemented.
+            throw_syntax_error();
+        }
+        throw_syntax_error();
+    }
+
+    offset_t Parser::parse_standard_aperture_c_tail(
+        const std::string_view& source, const std::string& aperture_id
+    ) {
+        std::string_view rest   = source;
+        offset_t         offset = 0;
+
+        auto diameter = consume_float(rest, offset);
+
+        std::optional<double> holeDiameter = std::nullopt;
+        if (try_consume_char(rest, offset, 'X')) {
+            holeDiameter = consume_float(rest, offset);
+        }
+
+        consume_char(rest, offset, '*');
+        consume_char(rest, offset, '%');
+
+        commands.push_back(std::make_shared<ADC>(aperture_id, diameter, holeDiameter));
+        return offset;
+    }
+
+    offset_t Parser::parse_standard_aperture_p_tail(
+        const std::string_view& source, const std::string& aperture_id
+    ) {
+        std::string_view rest   = source;
+        offset_t         offset = 0;
+
+        auto outerDiameter = consume_float(rest, offset);
+        consume_char(rest, offset, 'X');
+        auto verticesCount = consume_float(rest, offset);
+
+        std::optional<double> rotation = std::nullopt;
+        if (try_consume_char(rest, offset, 'X')) {
+            rotation = consume_float(rest, offset);
+        }
+        std::optional<double> holeDiameter = std::nullopt;
+        if (try_consume_char(rest, offset, 'X')) {
+            holeDiameter = consume_float(rest, offset);
+        }
+
+        consume_char(rest, offset, '*');
+        consume_char(rest, offset, '%');
+
+        commands.push_back(
+            std::make_shared<ADP>(aperture_id, outerDiameter, verticesCount, rotation, holeDiameter)
+        );
+        return offset;
+    }
+
+    [[nodiscard]] double Parser::consume_float(std::string_view& source, offset_t& offset) {
+        auto float_str = match_float(source);
+
+        offset += float_str.length();
+        source = source.substr(float_str.length());
+
+        return std::stod(float_str);
+    }
+
+    char Parser::consume_char(std::string_view& source, offset_t& offset, char expected) {
+        match_char(source, expected);
+
+        offset += 1;
+        source = source.substr(1);
+
+        return expected;
+    }
+
+    bool Parser::try_consume_char(std::string_view& source, offset_t& offset, char expected) {
+        if (source.empty() || source[0] != expected) {
+            return false;
+        }
+
+        offset += 1;
+        source = source.substr(1);
+
+        return true;
+    }
+
+    offset_t Parser::match_char(const std::string_view& source, char expected) {
+        if (source.empty() || source[0] != expected) {
+            throw_syntax_error();
+        }
+        return 1;
+    }
+
+    std::string Parser::match_float(const std::string_view& source) {
+        std::cmatch match;
+
+        const auto result = std::regex_search(
+            source.data(),
+            source.data() + source.size(),
+            match,
+            float_regex,
+            std::regex_constants::match_continuous
+        );
+        if (result && match.size() >= 1) {
+            return match[0].str();
+        }
+        throw_syntax_error();
     }
 
     offset_t Parser::parse_g_code(const std::string_view& gerber, const location_t& index) {
@@ -236,6 +405,10 @@ namespace gerber {
         }
 
         switch (source[1]) {
+            case 'A':
+                return parse_aperture(source);
+                break;
+
             case 'F':
                 return parse_fs_command(source, index);
                 break;
