@@ -1,5 +1,6 @@
 #include "gerber/parser.hpp"
 #include "gerber/ast/ast.hpp"
+#include "gerber/ast/command.hpp"
 #include "gerber/ast/m_codes/M02.hpp"
 #include <algorithm>
 #include <cassert>
@@ -117,6 +118,10 @@ namespace gerber {
         switch (source[2]) {
             case 'D':
                 return parse_aperture_definition(source);
+                break;
+
+            case 'M':
+                return parse_aperture_macro(source);
                 break;
 
             default:
@@ -253,6 +258,26 @@ namespace gerber {
         return true;
     }
 
+    std::string
+    Parser::consume_regex(std::string_view& source, offset_t& offset, std::regex& expected) {
+        std::cmatch match;
+
+        const auto result = std::regex_search(
+            source.data(),
+            source.data() + source.size(),
+            match,
+            expected,
+            std::regex_constants::match_continuous
+        );
+        if (result && match.size() >= 1) {
+            auto match_length = match.length();
+            offset += match_length;
+            source = source.substr(match_length);
+            return match[0].str();
+        }
+        throw_syntax_error();
+    }
+
     offset_t Parser::match_char(const std::string_view& source, char expected) {
         if (source.empty() || source[0] != expected) {
             throw_syntax_error();
@@ -274,6 +299,62 @@ namespace gerber {
             return match[0].str();
         }
         throw_syntax_error();
+    }
+
+    offset_t Parser::parse_aperture_macro(const std::string_view& source) {
+        std::shared_ptr<AMopen>    amOpen;
+        AM::primitives_container_t primitives;
+        std::shared_ptr<AMclose>   amClose;
+
+        std::string_view rest = source;
+
+        offset_t offset = 0;
+        parse_aperture_macro_open(rest, offset, amOpen);
+
+        offset_t previous_offset = offset;
+        while (!source.empty() && previous_offset) {
+            skip_whitespace(rest, offset);
+            previous_offset = parse_aperture_macro_primitive(rest, primitives);
+        }
+
+        parse_aperture_macro_close(rest, offset, amClose);
+
+        commands.push_back(std::make_shared<AM>(amOpen, primitives, amClose));
+        return offset;
+    }
+
+    void Parser::parse_aperture_macro_open(
+        std::string_view& source, offset_t& offset, std::shared_ptr<AMopen>& amOpen
+    ) {
+        consume_char(source, offset, '%');
+        consume_char(source, offset, 'A');
+        consume_char(source, offset, 'M');
+        auto name = consume_regex(source, offset, name_regex);
+        consume_char(source, offset, '*');
+
+        amOpen = std::make_shared<AMopen>(name);
+    }
+
+    offset_t Parser::parse_aperture_macro_primitive(
+        const std::string_view& source, AM::primitives_container_t& primitives
+    ) {
+        return 0;
+    }
+
+    void Parser::parse_aperture_macro_close(
+        std::string_view& source, offset_t& offset, std::shared_ptr<AMclose>& amClose
+    ) {
+        consume_char(source, offset, '%');
+        amClose = std::make_shared<AMclose>();
+    }
+
+    void Parser::skip_whitespace(std::string_view& source, offset_t& offset) {
+        offset_t local_offset = 0;
+        while (local_offset < source.length() && std::isspace(source[local_offset])) {
+            local_offset++;
+        }
+        source = source.substr(local_offset);
+        offset += local_offset;
     }
 
     offset_t Parser::parse_g_code(const std::string_view& gerber, const location_t& index) {

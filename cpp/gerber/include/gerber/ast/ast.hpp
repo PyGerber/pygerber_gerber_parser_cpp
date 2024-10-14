@@ -7,8 +7,11 @@
 #include "./aperture/AD.hpp"
 #include "./aperture/ADC.hpp"
 #include "./aperture/ADO.hpp"
-#include "./aperture/ADR.hpp"
 #include "./aperture/ADP.hpp"
+#include "./aperture/ADR.hpp"
+#include "./aperture/AM.hpp"
+#include "./aperture/AMclose.hpp"
+#include "./aperture/AMopen.hpp"
 
 #include "./d_codes/D01.hpp"
 #include "./d_codes/D02.hpp"

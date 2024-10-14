@@ -36,6 +36,7 @@ namespace gerber {
         std::regex m_code_regex{"^[Mm]0*([1-9][0-9]*)\\*"};
         // Helper regex
         std::regex float_regex{"([+-]?((([0-9]+)(\\.[0-9]*)?)|(\\.[0-9]+)))"};
+        std::regex name_regex{"([._a-zA-Z$][._a-zA-Z0-9]*)"};
 
       public:
         Parser();
@@ -86,21 +87,43 @@ namespace gerber {
          * to point to the next character after the float. If there is no valid float
          * literal throw SyntaxError.
          */
-        double consume_float(std::string_view& source, offset_t& offset);
+        double      consume_float(std::string_view& source, offset_t& offset);
         /**
          * Check if next character in the source string is the expected one. If it is,
          * move source and offset to point to the next character. Otherwise throw SyntaxError.
          */
-        char   consume_char(std::string_view& source, offset_t& offset, char expected);
+        char        consume_char(std::string_view& source, offset_t& offset, char expected);
         /**
          * Check if next character in the source string is the expected one. If it is,
          * move source, offset to point to the next character and return True. Otherwise
          * return False.
          */
-        bool   try_consume_char(std::string_view& source, offset_t& offset, char expected);
+        bool        try_consume_char(std::string_view& source, offset_t& offset, char expected);
+        /**
+         * Check if next characters in the source string match regex. If they do,
+         * move source and offset to point to the next character after the match and
+         * return matched string. Otherwise throw SyntaxError.
+         */
+        std::string consume_regex(std::string_view& source, offset_t& offset, std::regex& expected);
 
         offset_t    match_char(const std::string_view& source, char expected);
         std::string match_float(const std::string_view& source);
+
+        offset_t parse_aperture_macro(const std::string_view& source);
+        void     parse_aperture_macro_open(
+                std::string_view& source, offset_t& offset, std::shared_ptr<AMopen>& amOpen
+            );
+        offset_t parse_aperture_macro_primitive(
+            const std::string_view& source, AM::primitives_container_t& primitives
+        );
+        void parse_aperture_macro_close(
+            std::string_view& source, offset_t& offset, std::shared_ptr<AMclose>& amClose
+        );
+        /**
+         * Check if next characters in the source string are whitespace. If they are,
+         * move source and offset to point to the next character after whitespaces.
+         */
+        void skip_whitespace(std::string_view& source, offset_t& offset);
 
         offset_t parse_g_code(const std::string_view& gerber, const location_t& index);
         offset_t parse_m_code(const std::string_view& gerber);

@@ -25,7 +25,7 @@ TEST_CASE("SyntaxError from parser", "[exceptions]") {
 
 // Aperture
 
-TEST_CASE("Parse ADC", "[aperture]") {
+TEST_CASE("Parse ADC", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10C,0.5*%";
     auto           result        = parser.parse(gerber_source);
@@ -41,7 +41,7 @@ TEST_CASE("Parse ADC", "[aperture]") {
     REQUIRE_FALSE(adc->getHoleDiameter().has_value());
 }
 
-TEST_CASE("Parse ADC with hole", "[aperture]") {
+TEST_CASE("Parse ADC with hole", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10C,0.5X0.1*%";
     auto           result        = parser.parse(gerber_source);
@@ -58,7 +58,7 @@ TEST_CASE("Parse ADC with hole", "[aperture]") {
     REQUIRE(adc->getHoleDiameter().value() == 0.1);
 }
 
-TEST_CASE("Parse ADR", "[aperture]") {
+TEST_CASE("Parse ADR", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10R,0.5X0.5*%";
     auto           result        = parser.parse(gerber_source);
@@ -75,7 +75,7 @@ TEST_CASE("Parse ADR", "[aperture]") {
     REQUIRE_FALSE(adr->getHoleDiameter().has_value());
 }
 
-TEST_CASE("Parse ADR with hole", "[aperture]") {
+TEST_CASE("Parse ADR with hole", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10R,0.5X0.5X0.1*%";
     auto           result        = parser.parse(gerber_source);
@@ -93,7 +93,7 @@ TEST_CASE("Parse ADR with hole", "[aperture]") {
     REQUIRE(adr->getHoleDiameter().value() == 0.1);
 }
 
-TEST_CASE("Parse ADO", "[aperture]") {
+TEST_CASE("Parse ADO", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10O,0.5X0.5*%";
     auto           result        = parser.parse(gerber_source);
@@ -110,7 +110,7 @@ TEST_CASE("Parse ADO", "[aperture]") {
     REQUIRE_FALSE(ado->getHoleDiameter().has_value());
 }
 
-TEST_CASE("Parse ADO with hole", "[aperture]") {
+TEST_CASE("Parse ADO with hole", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10O,0.5X0.5X0.1*%";
     auto           result        = parser.parse(gerber_source);
@@ -128,7 +128,7 @@ TEST_CASE("Parse ADO with hole", "[aperture]") {
     REQUIRE(ado->getHoleDiameter().value() == 0.1);
 }
 
-TEST_CASE("Parse ADP", "[aperture]") {
+TEST_CASE("Parse ADP", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10P,0.5X5*%";
     auto           result        = parser.parse(gerber_source);
@@ -146,7 +146,7 @@ TEST_CASE("Parse ADP", "[aperture]") {
     REQUIRE_FALSE(adp->getHoleDiameter().has_value());
 }
 
-TEST_CASE("Parse ADP with hole", "[aperture]") {
+TEST_CASE("Parse ADP with hole", "[aperture_definition]") {
     gerber::Parser parser;
     auto           gerber_source = "%ADD10P,0.5X5X0X0.1*%";
     auto           result        = parser.parse(gerber_source);
@@ -164,6 +164,23 @@ TEST_CASE("Parse ADP with hole", "[aperture]") {
     REQUIRE(adp->getRotation().value() == 0.0);
     REQUIRE(adp->getHoleDiameter().has_value());
     REQUIRE(adp->getHoleDiameter().value() == 0.1);
+}
+
+TEST_CASE("Parse AM with no primitives", "[aperture_macro_definition]") {
+    gerber::Parser parser;
+    auto           gerber_source = "%AMCIRCLE*%";
+    auto           result        = parser.parse(gerber_source);
+    const auto&    nodes         = result.getNodes();
+
+    REQUIRE(nodes.size() == 1);
+    auto am = std::dynamic_pointer_cast<gerber::AM>(nodes[0]);
+
+    REQUIRE(am->getNodeName() == "AM");
+    REQUIRE(am->getAmOpen()->getNodeName() == "AMopen");
+    REQUIRE(am->getAmClose()->getNodeName() == "AMclose");
+
+    REQUIRE(am->getAmOpen()->getApertureId() == "CIRCLE");
+    REQUIRE(am->getPrimitives().empty());
 }
 
 // D codes
@@ -256,14 +273,10 @@ TEST_CASE("Parse G04 with content", "[g_codes]") {
     REQUIRE(nodes[0]->getNodeName() == "G04");
 }
 
-
 // M codes
 
 TEMPLATE_TEST_CASE_SIG(
-    "Parse M codes",
-    "[m_codes]",
-    ((typename T, int code), T, code),
-    (gerber::M02, 2)
+    "Parse M codes", "[m_codes]", ((typename T, int code), T, code), (gerber::M02, 2)
 ) {
     gerber::Parser parser;
     auto           gerber_source = fmt::format("M{}*M0{}*M00{}*M000{}*", code, code, code, code);
